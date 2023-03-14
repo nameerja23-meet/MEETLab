@@ -13,6 +13,12 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 
 public class HomeActivity extends AppCompatActivity {
@@ -21,17 +27,32 @@ public class HomeActivity extends AppCompatActivity {
     private ListView usersListView;
     private ArrayList<User> users;
     private ArrayAdapter<User> arrayAdapter;
-
+    private FirebaseAuth mAuth;
+    private FirebaseDatabase database;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-        usersListView = findViewById(R.id.usersListView);
-        users = new ArrayList<>();
-        users.add(new User("Nameer","nemojabara@gmail.com","1234"));
-        users.add(new User("Liam", "lulu@gmail.com","1234"));
-        arrayAdapter = new UserArrayAdapter(this,R.layout.user_row,users);
-        usersListView.setAdapter(arrayAdapter);
+        mAuth=FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
+        database.getReference("Users").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                users = new ArrayList<>();
+                for(DataSnapshot data:snapshot.getChildren()){
+                    users.add(data.getValue(User.class));
+                }
+                usersListView = findViewById(R.id.usersListView);
+                arrayAdapter = new UserArrayAdapter(HomeActivity.this,R.layout.user_row,users);
+                usersListView.setAdapter(arrayAdapter);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
     }
 
     @Override
@@ -44,6 +65,7 @@ public class HomeActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if(id==R.id.signOutBtn){
+            mAuth.signOut();
             Intent mainActivityIntent = new Intent(this,MainActivity.class);
             startActivity(mainActivityIntent);
         }
